@@ -30,17 +30,29 @@ class Spider(object):
         if real_input in SHORT_CUT.keys():
             return SHORT_CUT[real_input]
         elif '-' in real_input:
-            if len(real_input) != 8 or real_input[3] not in ascii_uppercase:
+            if len(real_input) != 8:
                 print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
                 return False
             else:
                 rs = 0
+                rc = 0
+                if   real_input[3] not in ascii_uppercase :
+                    if   real_input[3] not in ['0','9']:
+                        print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
+                        return False
+                    else:
+                        rc+=1
                 for r in real_input:
                     if r in ascii_letters:
                         rs+=1
                 if rs != 1:
-                    print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
-                    return False
+                    if rc !=1:
+                        print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
+                        return False
+                else:
+                    if rc !=0:
+                        print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
+                        return False
                 return real_input
         elif len(real_input) != 6:
             print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
@@ -50,7 +62,9 @@ class Spider(object):
             for r in real_input:
                 if r in digits:
                     rs += 1
-            if rs != 6:
+                if r in ascii_uppercase and real_input.find(r) == 3:
+                    rs += 1
+            if rs != 6 :
                 print(u'>> [错误] 你的搜索命令字符串不正确，请确保每一个搜索项都被包含到。')
                 return False
             return real_input
@@ -75,8 +89,10 @@ class Spider(object):
             index = cmd.index('-')
             code = cmd[index-1]+'-'+cmd[index+1]
             theme = CMD['theme'][code]
+            theme_name  = NAMES['theme'][code]
         else:
             theme = CMD['theme'][cmd[4]]
+            theme_name = NAMES['theme'][cmd[4]]
         order = SORT[cmd[-1]]
         order = order if order else ''
         self.params ={
@@ -89,7 +105,10 @@ class Spider(object):
             'page':1
         }
         url = api.format(**self.params)
-        kind = KIND[cmd[0]]
+        status_name=NAMES['status'][cmd[0]]
+        category_name = NAMES['category'][cmd[1]]
+        region_name = NAMES['region'][cmd[2]]
+        kind = os.sep.join([status_name,region_name,category_name,theme_name])
         return url,kind
 
     def show_input_and_parse(self):
@@ -175,8 +194,10 @@ class Spider(object):
             self.get_page_count(url)
             for i in range(1,self.page_count+1):
                 self.params.update({'page': i})
+                print(api.format(**self.params))    
                 try:
-                    self.get_page_books_link(api.format(**self.params))
+                    link = api.format(**self.params)
+                    self.get_page_books_link(link)
                 except Exception as e:
                     print(u'>> [错误] 抓取搜索结果第 %d 页失败。msg:%s'%(i,e))
         else:
@@ -192,6 +213,8 @@ class Spider(object):
             res = resp.text
             json_data = json.loads(re.findall(r'NNN\((.+)\);', res)[0])
             books = json_data['result']
+            ok_or_error = json_data['status']
+            if ok_or_error=='ERROR':return
             for i in books:
                 try:
                     href = host+i['comic_url']
