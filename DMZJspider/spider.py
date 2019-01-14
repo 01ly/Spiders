@@ -226,6 +226,7 @@ class Spider(object):
                     return
                 else:
                     self.get_book_chapters(href,name,C,headers)
+             return
 
     def get_book_chapters(self,href,name,C,headers):
         name = handle_key(name)
